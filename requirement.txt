@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+python-multipart
+pillow
+opencv-python-headless
+passlib[bcrypt]
+python-jose[cryptography]
+aiofiles
