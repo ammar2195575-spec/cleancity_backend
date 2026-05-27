@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from .database import engine, Base
-from .routers import auth, complaints
+from .routers import auth, complaints, detection
 
 # Database tables banao
 Base.metadata.create_all(bind=engine)
@@ -15,7 +15,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware — Flutter se connect hone ke liye
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,15 +24,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Uploads folder serve karo
+# Uploads folder
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# Routers include karo
+# Routers
 app.include_router(auth.router)
 app.include_router(complaints.router)
+app.include_router(detection.router)
 
-# Root endpoint
+@app.on_event("startup")
+async def startup_event():
+    print("🚀 CleanCity API starting...")
+    detection.load_model()
+    print("✅ Startup complete!")
+
 @app.get("/")
 def root():
     return {
@@ -41,7 +47,6 @@ def root():
         "docs": "/docs"
     }
 
-# Health check
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
