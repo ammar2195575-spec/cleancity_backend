@@ -96,5 +96,36 @@ def get_complaint(complaint_id: str, db: Session = Depends(get_db)):
 
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
+    
 
     return complaint
+@router.post("/after-image/{complaint_id}")
+async def upload_after_image(
+    complaint_id: str,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    complaint = db.query(Complaint).filter(
+        Complaint.complaint_id == complaint_id
+    ).first()
+
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    image_filename = f"after_{uuid.uuid4()}.jpg"
+    image_path = os.path.join(UPLOAD_DIR, image_filename)
+
+    with open(image_path, "wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+    complaint.after_image_path = image_path
+    complaint.status = "resolved"
+    complaint.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {
+        "message": "After image uploaded successfully",
+        "complaint_id": complaint_id,
+        "after_image_path": image_path
+    }

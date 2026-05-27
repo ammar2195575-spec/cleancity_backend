@@ -22,6 +22,7 @@ class Complaint(Base):
     user_name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     image_path = Column(String, nullable=True)
+    after_image_path = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     address = Column(String, nullable=True)
