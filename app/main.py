@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 import os
 from .database import engine, Base
 from .routers import auth, complaints, detection
@@ -36,6 +37,24 @@ app.include_router(detection.router)
 @app.on_event("startup")
 async def startup_event():
     print("🚀 CleanCity API starting...")
+
+    # Database migration
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE complaints ADD COLUMN IF NOT EXISTS after_image_path VARCHAR"
+            ))
+            conn.execute(text(
+                "ALTER TABLE complaints ADD COLUMN IF NOT EXISTS ai_label VARCHAR"
+            ))
+            conn.execute(text(
+                "ALTER TABLE complaints ADD COLUMN IF NOT EXISTS ai_confidence VARCHAR"
+            ))
+            conn.commit()
+            print("✅ Database migrated!")
+    except Exception as e:
+        print(f"Migration note: {e}")
+
     detection.load_model()
     print("✅ Startup complete!")
 
