@@ -20,8 +20,11 @@ async def submit_complaint(
     longitude: float = Form(...),
     address: str = Form(...),
     image: UploadFile = File(...),
+    ai_label: str = Form(default="Unknown"),
+    ai_confidence: str = Form(default="0%"),
     db: Session = Depends(get_db)
 ):
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
     image_filename = f"{uuid.uuid4()}.jpg"
     image_path = os.path.join(UPLOAD_DIR, image_filename)
 
@@ -40,6 +43,8 @@ async def submit_complaint(
         longitude=longitude,
         address=address,
         status="pending",
+        ai_label=ai_label,
+        ai_confidence=ai_confidence,
     )
     db.add(new_complaint)
     db.commit()
@@ -96,9 +101,9 @@ def get_complaint(complaint_id: str, db: Session = Depends(get_db)):
 
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
-    
 
     return complaint
+
 @router.post("/after-image/{complaint_id}")
 async def upload_after_image(
     complaint_id: str,
