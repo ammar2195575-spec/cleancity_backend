@@ -51,7 +51,7 @@ def detect_garbage(image_path: str):
 
         img = Image.open(image_path)
         img_array = np.array(img)
-        results = model(img_array, conf=0.25)
+        results = model(img_array, conf=0.70)
 
         if len(results) > 0 and len(results[0].boxes) > 0:
             boxes = results[0].boxes
