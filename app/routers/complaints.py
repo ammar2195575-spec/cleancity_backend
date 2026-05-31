@@ -6,8 +6,17 @@ import uuid
 from datetime import datetime
 from app.database import get_db
 from app.models import Complaint
+import cloudinary
+import cloudinary.uploader
 
 router = APIRouter(prefix="/complaints", tags=["Complaints"])
+
+# Cloudinary config
+cloudinary.config(
+    cloud_name="dqdf46ldg",
+    api_key="318491485831716",
+    api_secret="NhHzpH-tcd1oxeTPRfMiolg6EX4"
+)
 
 UPLOAD_DIR = "uploads"
 
@@ -25,11 +34,20 @@ async def submit_complaint(
     db: Session = Depends(get_db)
 ):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    image_filename = f"{uuid.uuid4()}.jpg"
-    image_path = os.path.join(UPLOAD_DIR, image_filename)
+    temp_path = f"{UPLOAD_DIR}/temp_{uuid.uuid4()}.jpg"
 
-    with open(image_path, "wb") as buffer:
+    with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(image.file, buffer)
+
+    # Cloudinary pe upload karo
+    upload_result = cloudinary.uploader.upload(
+        temp_path,
+        folder="cleancity/before"
+    )
+    image_url = upload_result['secure_url']
+
+    # Temp file delete karo
+    os.remove(temp_path)
 
     complaint_id = f"CC-{str(uuid.uuid4())[:6].upper()}"
 
@@ -38,7 +56,7 @@ async def submit_complaint(
         user_id=user_id,
         user_name=user_name,
         description=description,
-        image_path=image_path,
+        image_path=image_url,
         latitude=latitude,
         longitude=longitude,
         address=address,
@@ -118,13 +136,22 @@ async def upload_after_image(
         raise HTTPException(status_code=404, detail="Complaint not found")
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    image_filename = f"after_{uuid.uuid4()}.jpg"
-    image_path = os.path.join(UPLOAD_DIR, image_filename)
+    temp_path = f"{UPLOAD_DIR}/temp_after_{uuid.uuid4()}.jpg"
 
-    with open(image_path, "wb") as buffer:
+    with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(image.file, buffer)
 
-    complaint.after_image_path = image_path
+    # Cloudinary pe upload karo
+    upload_result = cloudinary.uploader.upload(
+        temp_path,
+        folder="cleancity/after"
+    )
+    after_image_url = upload_result['secure_url']
+
+    # Temp file delete karo
+    os.remove(temp_path)
+
+    complaint.after_image_path = after_image_url
     complaint.status = "resolved"
     complaint.updated_at = datetime.utcnow()
     db.commit()
@@ -132,5 +159,5 @@ async def upload_after_image(
     return {
         "message": "After image uploaded successfully",
         "complaint_id": complaint_id,
-        "after_image_path": image_path
+        "after_image_path": after_image_url
     }

@@ -10,3 +10,4 @@ aiofiles
 psycopg2-binary
 ultralytics
 numpy
+cloudinary
